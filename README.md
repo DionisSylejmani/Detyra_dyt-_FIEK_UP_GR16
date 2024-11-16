@@ -1,4 +1,4 @@
-- Project Description
+- Project Description:
 
 This project was brought to you by Dielli Doçi and Dionis Sylejmani, developed for a practical application involving client-server communication using the UDP protocol, implements a system where a server hosts files,
 including a text file and a batch file, while clients can interact with the server to performspecific operations.
