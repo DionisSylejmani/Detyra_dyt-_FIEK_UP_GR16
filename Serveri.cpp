@@ -42,6 +42,7 @@ int main(){
         WSACleanup();
         return 1;
     }
+
     // Struktura e adreses se serverit
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(PORT);
@@ -56,4 +57,53 @@ int main(){
     }
 
     cout << "Server is running and waiting for commands...\n";
+
+
+    while (true) {
+        memset(buffer, 0, BUFLEN); // fshirje e bufferit
+        int recvLen = recvfrom(serverSocket, buffer, BUFLEN - 1, 0, (sockaddr*)&clientAddr, &clientAddrLen);
+        if (recvLen == SOCKET_ERROR) {
+            cerr << "Receive failed. Error: " << WSAGetLastError() << "\n";
+            continue; // mban serverin on
+        }
+
+        buffer[recvLen] = '\0'; // Null-terminate received data
+        string command(buffer);
+        cout << "Received command: " << command << "\n";
+
+        if (command == "read") {
+            // lexon permbajtjen dhe e qon ne cmd te admin/klientit
+            ifstream inFile(FILE_NAME);
+            if (inFile.is_open()) {
+                string fileContents((istreambuf_iterator<char>(inFile)), istreambuf_iterator<char>());
+                inFile.close();
+
+                // logjika e dergimit
+                if (sendto(serverSocket, fileContents.c_str(), fileContents.size(), 0, (sockaddr*)&clientAddr, clientAddrLen) == SOCKET_ERROR) {
+                    cerr << "Send failed. Error: " << WSAGetLastError() << "\n";
+                }
+            } else {
+                string errorMsg = "Unable to open file for reading.";
+                sendto(serverSocket, errorMsg.c_str(), errorMsg.size(), 0, (sockaddr*)&clientAddr, clientAddrLen);
+            }
+        } else if (command == "write") {
+            // merr te dhenat prej klientit per shkrim
+            char writeBuffer[BUFLEN];
+            int recvWriteLen = recvfrom(serverSocket, writeBuffer, BUFLEN - 1, 0, (sockaddr*)&clientAddr, &clientAddrLen);
+            if (recvWriteLen == SOCKET_ERROR) {
+                cerr << "Receive failed for write data. Error: " << WSAGetLastError() << "\n";
+            } else {
+                writeBuffer[recvWriteLen] = '\0'; // Null-terminate received data
+                handleWriteRequest(writeBuffer);
+            }
+        } else {
+            string errorMsg = "Unsupported command received.";
+            sendto(serverSocket, errorMsg.c_str(), errorMsg.size(), 0, (sockaddr*)&clientAddr, clientAddrLen);
+        }
+    }
+
+    // Fshirja
+    closesocket(serverSocket);
+    WSACleanup();
+    return 0;
 }
