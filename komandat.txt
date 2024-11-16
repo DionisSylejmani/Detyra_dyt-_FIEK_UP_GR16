@@ -1,0 +1,6 @@
+g++ Serveri.cpp -o server -lws2_32
+g++ Klienti.cpp -o client -lws2_32
+
+me 1 cmd tjeter:
+./server
+./client
